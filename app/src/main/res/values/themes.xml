@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.AttendanceSystem"
+        parent="Theme.MaterialComponents.DayNight.NoActionBar">
+
+        <item name="colorPrimary">@color/purple_500</item>
+        <item name="colorSecondary">@color/purple_700</item>
+    </style>
+
+</resources>

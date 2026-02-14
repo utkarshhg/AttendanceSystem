@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Primary colors -->
+    <color name="purple_500">#6200EE</color>
+    <color name="purple_700">#3700B3</color>
+
+    <!-- Extra (safe to have) -->
+    <color name="primary">#6200EE</color>
+    <color name="light_green">#C8E6C9</color>
+
+</resources>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Attendance System</string>
+    <string name="welcome">Welcome</string>
+    <string name="camera_permission_required">Camera permission required</string>
+    <string name="no_faces_detected">No faces detected</string>
+    <string name="error">Error</string>
+    <string name="success">Success</string>
+    <string name="loading">Loading...</string>
+    <string name="register">Register</string>
+    <string name="attendance">Attendance</string>
+</resources>

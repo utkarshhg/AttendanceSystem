@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.attendance.facerecognition">
+
+    <!-- IMPORTANT: All permissions required -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <!-- Camera is required feature -->
+    <uses-feature android:name="android.hardware.camera" />
+
+    <application
+        android:name=".AttendanceApplication"
+        android:allowBackup="true"
+        android:debuggable="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.AttendanceSystem">
+
+        <!-- Student Registration Activity -->
+        <activity
+            android:name=".ui.student.StudentDashboardFragment"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <!-- Professor Attendance Activity -->
+        <activity
+            android:name=".ui.professor.ProfessorDashboardFragment"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+    </application>
+
+</manifest>
