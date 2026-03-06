@@ -2,14 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.attendance.facerecognition">
 
-    <!-- IMPORTANT: All permissions required -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
-    <!-- Camera is required feature -->
     <uses-feature android:name="android.hardware.camera" />
 
     <application
@@ -22,16 +20,20 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AttendanceSystem">
 
-        <!-- Student Registration Activity -->
         <activity
-            android:name=".ui.student.StudentDashboardFragment"
-            android:exported="false"
-            android:screenOrientation="portrait" />
+            android:name=".ui.MainActivity"
+            android:exported="true"
+            android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
 
-        <!-- Professor Attendance Activity -->
         <activity
-            android:name=".ui.professor.ProfessorDashboardFragment"
+            android:name=".ui.FaceRegistrationActivity"
             android:exported="false"
+
             android:screenOrientation="portrait" />
 
     </application>

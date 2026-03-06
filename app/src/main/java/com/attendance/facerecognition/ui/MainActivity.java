@@ -5,23 +5,32 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentPagerAdapter;
-import androidx.viewpager.widget.ViewPager;
+import androidx.fragment.app.FragmentActivity;
+import androidx.viewpager2.adapter.FragmentStateAdapter;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.attendance.facerecognition.R;
-import com.attendance.facerecognition.ui.student.StudentDashboardFragment;
 import com.attendance.facerecognition.ui.professor.ProfessorDashboardFragment;
+import com.attendance.facerecognition.ui.student.StudentDashboardFragment;
 import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.tabs.TabLayoutMediator;
 
 public class MainActivity extends AppCompatActivity {
-    private ViewPager viewPager;
+    private ViewPager2 viewPager;
     private TabLayout tabLayout;
     private static final int PERMISSION_REQUEST = 100;
+
+    private final String[] REQUIRED_PERMISSIONS = new String[]{
+            Manifest.permission.CAMERA,
+            Manifest.permission.INTERNET,
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,54 +49,55 @@ public class MainActivity extends AppCompatActivity {
 
     private void checkPermissions() {
         if (!hasPermissions()) {
-            requestPermissions();
+            ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, PERMISSION_REQUEST);
         }
     }
 
     private boolean hasPermissions() {
-        return ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-                == PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(this, Manifest.permission.INTERNET)
-                        == PackageManager.PERMISSION_GRANTED;
-    }
-
-    private void requestPermissions() {
-        ActivityCompat.requestPermissions(this,
-                new String[]{
-                        Manifest.permission.CAMERA,
-                        Manifest.permission.INTERNET,
-                        Manifest.permission.READ_EXTERNAL_STORAGE,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE
-                },
-                PERMISSION_REQUEST);
+        for (String permission : REQUIRED_PERMISSIONS) {
+            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == PERMISSION_REQUEST) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            if (hasPermissions()) {
                 Toast.makeText(this, "Permissions granted", Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(this, "Permissions denied", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Permissions denied. App may not function correctly.", Toast.LENGTH_LONG).show();
             }
         }
     }
 
     private void setupViewPager() {
-        ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager(),
-                FragmentPagerAdapter.BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT);
+        ViewPagerAdapter adapter = new ViewPagerAdapter(this);
         viewPager.setAdapter(adapter);
-        tabLayout.setupWithViewPager(viewPager);
+
+        new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
+            switch (position) {
+                case 0:
+                    tab.setText("Student");
+                    break;
+                case 1:
+                    tab.setText("Professor");
+                    break;
+            }
+        }).attach();
     }
 
-    private static class ViewPagerAdapter extends FragmentPagerAdapter {
-        public ViewPagerAdapter(FragmentManager fm, int behavior) {
-            super(fm, behavior);
+    private static class ViewPagerAdapter extends FragmentStateAdapter {
+        public ViewPagerAdapter(@NonNull FragmentActivity fragmentActivity) {
+            super(fragmentActivity);
         }
 
+        @NonNull
         @Override
-        public Fragment getItem(int position) {
+        public Fragment createFragment(int position) {
             switch (position) {
                 case 0:
                     return new StudentDashboardFragment();
@@ -99,20 +109,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        public int getCount() {
+        public int getItemCount() {
             return 2;
-        }
-
-        @Override
-        public CharSequence getPageTitle(int position) {
-            switch (position) {
-                case 0:
-                    return "Student";
-                case 1:
-                    return "Professor";
-                default:
-                    return "Unknown";
-            }
         }
     }
 }
