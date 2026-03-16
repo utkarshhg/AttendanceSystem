@@ -55,7 +55,7 @@ public class FaceRegistrationActivity extends AppCompatActivity {
     private ImageView facePreview;
 
     // ==========================================
-    // NEW: Temporary memory to hold the first face
+    // Memory to hold Face 1 for our live test
     // ==========================================
     private float[] savedTestFingerprint = null;
 
@@ -133,58 +133,67 @@ public class FaceRegistrationActivity extends AppCompatActivity {
             detector.process(image)
                     .addOnSuccessListener(faces -> {
                         if (faces.isEmpty()) {
-                            Toast.makeText(FaceRegistrationActivity.this, "No face detected!", Toast.LENGTH_SHORT).show();
+                            Log.d(TAG, "No face detected in this frame.");
                         } else {
-                            Face face = faces.get(0);
-                            Rect bounds = face.getBoundingBox();
+                            Log.d(TAG, "Found " + faces.size() + " faces in the frame!");
 
-                            try {
-                                Bitmap fullBitmap = imageProxy.toBitmap();
-                                Matrix matrix = new Matrix();
-                                matrix.postRotate(imageProxy.getImageInfo().getRotationDegrees());
-                                Bitmap rotatedBitmap = Bitmap.createBitmap(fullBitmap, 0, 0, fullBitmap.getWidth(), fullBitmap.getHeight(), matrix, true);
+                            // ========================================================
+                            // THE NEW MULTIPLE-FACE LOOP!
+                            // ========================================================
+                            for (int i = 0; i < faces.size(); i++) {
+                                Face currentFace = faces.get(i);
+                                Rect bounds = currentFace.getBoundingBox();
 
-                                int x = Math.max(bounds.left, 0);
-                                int y = Math.max(bounds.top, 0);
-                                int width = Math.min(bounds.width(), rotatedBitmap.getWidth() - x);
-                                int height = Math.min(bounds.height(), rotatedBitmap.getHeight() - y);
+                                try {
+                                    Bitmap fullBitmap = imageProxy.toBitmap();
+                                    Matrix matrix = new Matrix();
+                                    matrix.postRotate(imageProxy.getImageInfo().getRotationDegrees());
+                                    Bitmap rotatedBitmap = Bitmap.createBitmap(fullBitmap, 0, 0, fullBitmap.getWidth(), fullBitmap.getHeight(), matrix, true);
 
-                                Bitmap croppedFace = Bitmap.createBitmap(rotatedBitmap, x, y, width, height);
-                                Bitmap scaledFace = Bitmap.createScaledBitmap(croppedFace, 112, 112, false);
+                                    // Crop THIS specific student's face
+                                    int x = Math.max(bounds.left, 0);
+                                    int y = Math.max(bounds.top, 0);
+                                    int width = Math.min(bounds.width(), rotatedBitmap.getWidth() - x);
+                                    int height = Math.min(bounds.height(), rotatedBitmap.getHeight() - y);
 
-                                runOnUiThread(() -> facePreview.setImageBitmap(scaledFace));
+                                    Bitmap croppedFace = Bitmap.createBitmap(rotatedBitmap, x, y, width, height);
+                                    Bitmap scaledFace = Bitmap.createScaledBitmap(croppedFace, 112, 112, false);
 
-                                ByteBuffer inputBuffer = convertBitmapToByteBuffer(scaledFace);
-                                float[][] faceEmbedding = new float[1][192];
-                                tflite.run(inputBuffer, faceEmbedding);
+                                    // Show the most recently processed face in the preview box
+                                    runOnUiThread(() -> facePreview.setImageBitmap(scaledFace));
 
-                                Log.d(TAG, "FINGERPRINT GENERATED: " + Arrays.toString(faceEmbedding[0]));
+                                    // 1. Convert to raw math
+                                    ByteBuffer inputBuffer = convertBitmapToByteBuffer(scaledFace);
+                                    float[][] faceEmbedding = new float[1][192];
 
-                                // ========================================================
-                                // NEW CODE: The Live Match Test!
-                                // ========================================================
-                                if (savedTestFingerprint == null) {
-                                    // FIRST PICTURE: Save it to memory
-                                    savedTestFingerprint = faceEmbedding[0];
-                                    runOnUiThread(() -> Toast.makeText(FaceRegistrationActivity.this, "Face 1 Saved! Now take a 2nd picture.", Toast.LENGTH_LONG).show());
-                                } else {
-                                    // SECOND PICTURE: Compare it!
-                                    float distance = calculateDistance(savedTestFingerprint, faceEmbedding[0]);
+                                    // 2. Run the AI for THIS student
+                                    tflite.run(inputBuffer, faceEmbedding);
 
-                                    if (distance < 1.0f) {
-                                        // Match!
-                                        runOnUiThread(() -> Toast.makeText(FaceRegistrationActivity.this, "✅ MATCH! It's You! (Score: " + distance + ")", Toast.LENGTH_LONG).show());
+                                    Log.d(TAG, "Processed Face #" + (i + 1) + " | Fingerprint Generated!");
+
+                                    // 3. The Live Match Test
+                                    if (savedTestFingerprint == null) {
+                                        savedTestFingerprint = faceEmbedding[0];
+                                        runOnUiThread(() -> Toast.makeText(FaceRegistrationActivity.this, "Face 1 Saved! Bring a friend into the frame.", Toast.LENGTH_SHORT).show());
                                     } else {
-                                        // No Match!
-                                        runOnUiThread(() -> Toast.makeText(FaceRegistrationActivity.this, "❌ NO MATCH! Imposter! (Score: " + distance + ")", Toast.LENGTH_LONG).show());
+                                        float distance = calculateDistance(savedTestFingerprint, faceEmbedding[0]);
+
+                                        if (distance < 1.0f) {
+                                            Log.d(TAG, "Face #" + (i + 1) + " -> ✅ MATCH! It's You! (Score: " + distance + ")");
+                                        } else {
+                                            Log.d(TAG, "Face #" + (i + 1) + " -> ❌ NO MATCH! Imposter! (Score: " + distance + ")");
+                                        }
                                     }
 
-                                    // Reset so you can test again
-                                    savedTestFingerprint = null;
+                                } catch (Exception e) {
+                                    Log.e(TAG, "Error processing Face #" + (i + 1), e);
                                 }
+                            }
 
-                            } catch (Exception e) {
-                                Log.e(TAG, "Error processing face", e);
+                            // Let the professor know we processed a group!
+                            if (faces.size() > 1) {
+                                // Tell us EXACTLY how many faces it found every single time we click!
+                                runOnUiThread(() -> Toast.makeText(FaceRegistrationActivity.this, "AI Found " + faces.size() + " Faces!", Toast.LENGTH_LONG).show());
                             }
                         }
                     })
@@ -223,7 +232,7 @@ public class FaceRegistrationActivity extends AppCompatActivity {
     }
 
     // ==========================================
-    // NEW: The Euclidean Distance math function
+    // The Euclidean Distance math function
     // ==========================================
     private float calculateDistance(float[] face1, float[] face2) {
         float distance = 0f;
