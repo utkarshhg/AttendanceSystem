@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#16406F">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical"
         android:padding="16dp">
 
@@ -13,32 +14,34 @@
             android:id="@+id/welcome_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
             android:text="Welcome, Student!"
+            android:textColor="#FFFFFF"
             android:textSize="20sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="16dp" />
+            android:textStyle="bold" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
             android:orientation="vertical"
-            android:padding="16dp"
-            android:layout_marginBottom="16dp">
+            android:padding="16dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
                 android:text="Your Attendance"
-                android:textSize="14sp"
-                android:layout_marginBottom="8dp" />
+                android:textColor="#FFFFFF"
+                android:textSize="14sp" />
 
             <TextView
                 android:id="@+id/attendance_text"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Loading..."
-                android:textSize="18sp"
-                android:textColor="@color/primary" />
+                android:textColor="@color/common_google_signin_btn_text_dark_default"
+                android:textSize="18sp" />
 
         </LinearLayout>
 
@@ -46,14 +49,24 @@
             android:id="@+id/register_face_btn"
             android:layout_width="match_parent"
             android:layout_height="48dp"
-            android:text="Register Face"
-            android:layout_marginBottom="8dp" />
+            android:layout_marginBottom="8dp"
+            android:backgroundTint="#5DACEC"
+            android:text="Register Face" />
 
         <Button
             android:id="@+id/view_attendance_btn"
             android:layout_width="match_parent"
             android:layout_height="48dp"
+            android:layout_marginBottom="8dp"
+            android:backgroundTint="#5DACEC"
             android:text="View Attendance Details" />
+
+        <Button
+            android:id="@+id/Signin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:backgroundTint="#5DACEC"
+            android:text=" Sign in" />
 
     </LinearLayout>
 

@@ -13,26 +13,10 @@
             android:id="@+id/welcome_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
             android:text="Welcome, Professor!"
             android:textSize="20sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="16dp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp"
-            android:layout_marginBottom="16dp">
-
-            <TextView
-                android:id="@+id/class_text"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Class: Java Programming"
-                android:textSize="14sp" />
-
-        </LinearLayout>
+            android:textStyle="bold" />
 
         <Button
             android:id="@+id/mark_attendance_btn"

@@ -36,7 +36,7 @@ public class ProfessorDashboardFragment extends Fragment {
 
     private void initViews(View view) {
         welcomeText = view.findViewById(R.id.welcome_text);
-        classText = view.findViewById(R.id.class_text);
+        classText = view.findViewById(R.id.welcome_text);
         markAttendanceBtn = view.findViewById(R.id.mark_attendance_btn);
         viewReportsBtn = view.findViewById(R.id.view_reports_btn);
     }
