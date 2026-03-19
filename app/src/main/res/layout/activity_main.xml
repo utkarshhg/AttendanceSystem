@@ -2,31 +2,90 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center_vertical"
+    android:background="#FFFFFF">
 
-    <com.google.android.material.appbar.AppBarLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Welcome Back"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:textColor="#333333"
+        android:layout_marginBottom="32dp"
+        android:layout_gravity="center_horizontal"/>
 
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@color/primary"
-            android:elevation="4dp" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="I am a:"
+        android:textSize="16sp"
+        android:layout_marginBottom="8dp"/>
 
-    </com.google.android.material.appbar.AppBarLayout>
-
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/tabLayout"
+    <RadioGroup
+        android:id="@+id/roleGroup"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/primary" />
+        android:orientation="horizontal"
+        android:layout_marginBottom="24dp">
 
-    <androidx.viewpager2.widget.ViewPager2
-        android:id="@+id/viewPager"
+        <RadioButton
+            android:id="@+id/radioProfessor"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Professor"
+            android:checked="true"/>
+
+        <RadioButton
+            android:id="@+id/radioStudent"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Student" />
+    </RadioGroup>
+
+    <EditText
+        android:id="@+id/etEmail"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_height="55dp"
+        android:hint="Email Address"
+        android:inputType="textEmailAddress"
+        android:background="@android:drawable/editbox_background"
+        android:paddingLeft="12dp"
+        android:layout_marginBottom="16dp"/>
+
+    <EditText
+        android:id="@+id/etPassword"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:hint="Password"
+        android:inputType="textPassword"
+        android:background="@android:drawable/editbox_background"
+        android:paddingLeft="12dp"
+        android:layout_marginBottom="24dp"/>
+
+    <Button
+        android:id="@+id/btnLogin"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:text="Login"
+        android:textAllCaps="false"
+        android:textSize="18sp"
+        android:backgroundTint="#2196F3"
+        android:textColor="#FFFFFF"/>
+
+    <TextView
+        android:id="@+id/tvRegister"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Don't have an account? Register"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="20dp"
+        android:textColor="#2196F3"
+        android:clickable="true"
+        android:focusable="true"/>
 
 </LinearLayout>
