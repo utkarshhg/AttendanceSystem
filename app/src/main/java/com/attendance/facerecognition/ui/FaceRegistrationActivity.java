@@ -39,7 +39,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -137,9 +136,6 @@ public class FaceRegistrationActivity extends AppCompatActivity {
                         } else {
                             Log.d(TAG, "Found " + faces.size() + " faces in the frame!");
 
-                            // ========================================================
-                            // THE NEW MULTIPLE-FACE LOOP!
-                            // ========================================================
                             for (int i = 0; i < faces.size(); i++) {
                                 Face currentFace = faces.get(i);
                                 Rect bounds = currentFace.getBoundingBox();
@@ -150,7 +146,6 @@ public class FaceRegistrationActivity extends AppCompatActivity {
                                     matrix.postRotate(imageProxy.getImageInfo().getRotationDegrees());
                                     Bitmap rotatedBitmap = Bitmap.createBitmap(fullBitmap, 0, 0, fullBitmap.getWidth(), fullBitmap.getHeight(), matrix, true);
 
-                                    // Crop THIS specific student's face
                                     int x = Math.max(bounds.left, 0);
                                     int y = Math.max(bounds.top, 0);
                                     int width = Math.min(bounds.width(), rotatedBitmap.getWidth() - x);
@@ -159,19 +154,15 @@ public class FaceRegistrationActivity extends AppCompatActivity {
                                     Bitmap croppedFace = Bitmap.createBitmap(rotatedBitmap, x, y, width, height);
                                     Bitmap scaledFace = Bitmap.createScaledBitmap(croppedFace, 112, 112, false);
 
-                                    // Show the most recently processed face in the preview box
                                     runOnUiThread(() -> facePreview.setImageBitmap(scaledFace));
 
-                                    // 1. Convert to raw math
                                     ByteBuffer inputBuffer = convertBitmapToByteBuffer(scaledFace);
                                     float[][] faceEmbedding = new float[1][192];
 
-                                    // 2. Run the AI for THIS student
                                     tflite.run(inputBuffer, faceEmbedding);
 
                                     Log.d(TAG, "Processed Face #" + (i + 1) + " | Fingerprint Generated!");
 
-                                    // 3. The Live Match Test
                                     if (savedTestFingerprint == null) {
                                         savedTestFingerprint = faceEmbedding[0];
                                         runOnUiThread(() -> Toast.makeText(FaceRegistrationActivity.this, "Face 1 Saved! Bring a friend into the frame.", Toast.LENGTH_SHORT).show());
@@ -190,9 +181,7 @@ public class FaceRegistrationActivity extends AppCompatActivity {
                                 }
                             }
 
-                            // Let the professor know we processed a group!
                             if (faces.size() > 1) {
-                                // Tell us EXACTLY how many faces it found every single time we click!
                                 runOnUiThread(() -> Toast.makeText(FaceRegistrationActivity.this, "AI Found " + faces.size() + " Faces!", Toast.LENGTH_LONG).show());
                             }
                         }
@@ -231,9 +220,6 @@ public class FaceRegistrationActivity extends AppCompatActivity {
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
     }
 
-    // ==========================================
-    // The Euclidean Distance math function
-    // ==========================================
     private float calculateDistance(float[] face1, float[] face2) {
         float distance = 0f;
         for (int i = 0; i < face1.length; i++) {

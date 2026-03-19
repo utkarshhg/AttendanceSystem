@@ -1,36 +1,29 @@
 package com.attendance.facerecognition.ui;
 
-import android.Manifest;
-import android.content.pm.PackageManager;
+import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.RadioGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentActivity;
-import androidx.viewpager2.adapter.FragmentStateAdapter;
-import androidx.viewpager2.widget.ViewPager2;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import com.attendance.facerecognition.R;
 import com.attendance.facerecognition.ui.professor.ProfessorDashboardFragment;
 import com.attendance.facerecognition.ui.student.StudentDashboardFragment;
-import com.google.android.material.tabs.TabLayout;
-import com.google.android.material.tabs.TabLayoutMediator;
 
 public class MainActivity extends AppCompatActivity {
-    private ViewPager2 viewPager;
-    private TabLayout tabLayout;
-    private static final int PERMISSION_REQUEST = 100;
 
-    private final String[] REQUIRED_PERMISSIONS = new String[]{
-            Manifest.permission.CAMERA,
-            Manifest.permission.INTERNET,
-            Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE
-    };
+    private RadioGroup roleGroup;
+    private EditText etEmail, etPassword;
+    private Button btnLogin;
+    private TextView tvRegister;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,79 +31,75 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         initViews();
-        checkPermissions();
-        setupViewPager();
+        setupListeners();
     }
 
     private void initViews() {
-        viewPager = findViewById(R.id.viewPager);
-        tabLayout = findViewById(R.id.tabLayout);
+        roleGroup = findViewById(R.id.roleGroup);
+        etEmail = findViewById(R.id.etEmail);
+        etPassword = findViewById(R.id.etPassword);
+        btnLogin = findViewById(R.id.btnLogin);
+        tvRegister = findViewById(R.id.tvRegister);
     }
 
-    private void checkPermissions() {
-        if (!hasPermissions()) {
-            ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, PERMISSION_REQUEST);
-        }
-    }
-
-    private boolean hasPermissions() {
-        for (String permission : REQUIRED_PERMISSIONS) {
-            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
-                return false;
+    private void setupListeners() {
+        btnLogin.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                performLogin();
             }
-        }
-        return true;
+        });
+
+        // --- UPDATED REGISTRATION LOGIC START ---
+        tvRegister.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, FaceRegistrationActivity.class);
+
+                // Check karein ki kounsa role selected hai
+                int selectedId = roleGroup.getCheckedRadioButtonId();
+
+                if (selectedId == R.id.radioProfessor) {
+                    // Agar Professor radio button select hai
+                    intent.putExtra("user_role", "professor");
+                } else {
+                    // Agar Student radio button select hai ya kuch select nahi hai
+                    intent.putExtra("user_role", "student");
+                }
+
+                startActivity(intent);
+            }
+        });
+        // --- UPDATED REGISTRATION LOGIC END ---
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == PERMISSION_REQUEST) {
-            if (hasPermissions()) {
-                Toast.makeText(this, "Permissions granted", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "Permissions denied. App may not function correctly.", Toast.LENGTH_LONG).show();
-            }
+    private void performLogin() {
+        String email = etEmail.getText().toString().trim();
+        String password = etPassword.getText().toString().trim();
+
+        if (email.isEmpty() || password.isEmpty()) {
+            Toast.makeText(this, "Please enter all details", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        int selectedId = roleGroup.getCheckedRadioButtonId();
+
+        if (selectedId == R.id.radioProfessor) {
+            loadFragment(new ProfessorDashboardFragment());
+            Toast.makeText(this, "Welcome Professor!", Toast.LENGTH_SHORT).show();
+        } else if (selectedId == R.id.radioStudent) {
+            loadFragment(new StudentDashboardFragment());
+            Toast.makeText(this, "Welcome Student!", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "Please select a role", Toast.LENGTH_SHORT).show();
         }
     }
 
-    private void setupViewPager() {
-        ViewPagerAdapter adapter = new ViewPagerAdapter(this);
-        viewPager.setAdapter(adapter);
-
-        new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
-            switch (position) {
-                case 0:
-                    tab.setText("Student");
-                    break;
-                case 1:
-                    tab.setText("Professor");
-                    break;
-            }
-        }).attach();
-    }
-
-    private static class ViewPagerAdapter extends FragmentStateAdapter {
-        public ViewPagerAdapter(@NonNull FragmentActivity fragmentActivity) {
-            super(fragmentActivity);
-        }
-
-        @NonNull
-        @Override
-        public Fragment createFragment(int position) {
-            switch (position) {
-                case 0:
-                    return new StudentDashboardFragment();
-                case 1:
-                    return new ProfessorDashboardFragment();
-                default:
-                    return new StudentDashboardFragment();
-            }
-        }
-
-        @Override
-        public int getItemCount() {
-            return 2;
-        }
+    private void loadFragment(Fragment fragment) {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        fragmentTransaction.replace(android.R.id.content, fragment);
+        fragmentTransaction.addToBackStack(null);
+        fragmentTransaction.commit();
     }
 }

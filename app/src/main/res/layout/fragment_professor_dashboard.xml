@@ -1,52 +1,98 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="#F8F9FA">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="30dp">
+
+        <TextView
+            android:id="@+id/tvProfWelcome"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Welcome, Prof. Name"
+            android:textSize="20sp"
+            android:textColor="#333333"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnLogoutProf"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_alignParentRight="true"
+            android:backgroundTint="#FF5252"
+            android:text="Logout"
+            android:textSize="12sp"
+            android:textColor="#FFFFFF" />
+    </RelativeLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Choose Subject"
+        android:textSize="16sp"
+        android:layout_marginBottom="8dp" />
+
+    <Spinner
+        android:id="@+id/spinnerSubject"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginBottom="20dp"
+        android:background="@android:drawable/btn_dropdown" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Choose Branch"
+        android:textSize="16sp"
+        android:layout_marginBottom="8dp" />
+
+    <Spinner
+        android:id="@+id/spinnerBranch"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginBottom="30dp"
+        android:background="@android:drawable/btn_dropdown" />
+
+    <Button
+        android:id="@+id/btnTakeAttendance"
+        android:layout_width="match_parent"
+        android:layout_height="65dp"
+        android:text="TAKE ATTENDANCE"
+        android:textSize="18sp"
+        android:backgroundTint="#6200EE"
+        android:layout_marginBottom="25dp" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
-
-        <TextView
-            android:id="@+id/welcome_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Welcome, Professor!"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="16dp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp"
-            android:layout_marginBottom="16dp">
-
-            <TextView
-                android:id="@+id/class_text"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Class: Java Programming"
-                android:textSize="14sp" />
-
-        </LinearLayout>
+        android:orientation="horizontal"
+        android:weightSum="2">
 
         <Button
-            android:id="@+id/mark_attendance_btn"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="Mark Attendance"
-            android:layout_marginBottom="8dp" />
+            android:id="@+id/btnViewHistory"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginRight="8dp"
+            android:text="View History"
+            android:backgroundTint="#03DAC5"
+            android:textColor="#000000" />
 
         <Button
-            android:id="@+id/view_reports_btn"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="View Reports" />
-
+            android:id="@+id/btnExportReport"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginLeft="8dp"
+            android:text="Export Report"
+            android:backgroundTint="#03DAC5"
+            android:textColor="#000000" />
     </LinearLayout>
 
-</ScrollView>
+</LinearLayout>
