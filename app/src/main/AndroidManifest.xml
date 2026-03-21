@@ -31,7 +31,12 @@
         </activity>
 
         <activity
-            android:name=".ui.FaceRegistrationActivity"
+            android:name=".ui.RegisterActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.FaceScannerActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
 

@@ -16,7 +16,7 @@
             android:id="@+id/tvStudentName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Welcome, Student Name"
+            android:text="Welcome, Student"
             android:textSize="20sp"
             android:textStyle="bold"
             android:textColor="#333333" />
@@ -63,7 +63,7 @@
                 android:id="@+id/tvSelectedSubjectTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Subject Statistics"
+                android:text="Attendance Summary"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:layout_marginBottom="12dp" />
@@ -86,8 +86,19 @@
                     android:layout_weight="1"
                     android:gravity="center"
                     android:orientation="vertical">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Total" />
-                    <TextView android:id="@+id/tvTotalClasses" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:textSize="18sp" android:textStyle="bold"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Total"
+                        android:textSize="12sp"/>
+                    <TextView
+                        android:id="@+id/tvTotalClasses"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#333333"/>
                 </LinearLayout>
 
                 <LinearLayout
@@ -96,8 +107,20 @@
                     android:layout_weight="1"
                     android:gravity="center"
                     android:orientation="vertical">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Present" android:textColor="#4CAF50"/>
-                    <TextView android:id="@+id/tvPresentClasses" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:textSize="18sp" android:textStyle="bold"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Present"
+                        android:textColor="#4CAF50"
+                        android:textSize="12sp"/>
+                    <TextView
+                        android:id="@+id/tvPresentClasses"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#4CAF50"/>
                 </LinearLayout>
 
                 <LinearLayout
@@ -106,9 +129,22 @@
                     android:layout_weight="1"
                     android:gravity="center"
                     android:orientation="vertical">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="%" android:textColor="#2196F3"/>
-                    <TextView android:id="@+id/tvPercentage" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0%" android:textSize="18sp" android:textStyle="bold"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Status"
+                        android:textColor="#2196F3"
+                        android:textSize="12sp"/>
+                    <TextView
+                        android:id="@+id/tvPercentage"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0%"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#2196F3"/>
                 </LinearLayout>
+
             </LinearLayout>
         </LinearLayout>
     </androidx.cardview.widget.CardView>

@@ -16,7 +16,8 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.attendance.facerecognition.R;
-import com.attendance.facerecognition.ui.FaceRegistrationActivity;
+// ---> CRUCIAL FIX: Import your actual camera!
+import com.attendance.facerecognition.ui.FaceScannerActivity;
 
 public class ProfessorDashboardFragment extends Fragment {
 
@@ -27,16 +28,10 @@ public class ProfessorDashboardFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        // Layout attach kar rahe hain
         View view = inflater.inflate(R.layout.fragment_professor_dashboard, container, false);
 
-        // Views initialize karein
         initViews(view);
-
-        // Spinners mein data bharna
         setupSpinners();
-
-        // Click Listeners
         setupListeners();
 
         return view;
@@ -53,13 +48,11 @@ public class ProfessorDashboardFragment extends Fragment {
     }
 
     private void setupSpinners() {
-        // Subject List
         String[] subjects = {"Mathematics", "Physics", "Computer Science", "Software Engineering"};
         ArrayAdapter<String> subAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, subjects);
         subAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerSubject.setAdapter(subAdapter);
 
-        // Branch List
         String[] branches = {"CS-A", "CS-B", "IT-A", "Mechanical", "Civil"};
         ArrayAdapter<String> branchAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, branches);
         branchAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -67,26 +60,23 @@ public class ProfessorDashboardFragment extends Fragment {
     }
 
     private void setupListeners() {
-        // Take Attendance Button Click
+        // ---> THE FIX: Turn the Camera on in "Attendance Mode"
         btnTakeAttendance.setOnClickListener(v -> {
             String selectedSub = spinnerSubject.getSelectedItem().toString();
-            String selectedBranch = spinnerBranch.getSelectedItem().toString();
+            Toast.makeText(getContext(), "Opening Camera for " + selectedSub, Toast.LENGTH_SHORT).show();
 
-            Toast.makeText(getContext(), "Starting attendance for " + selectedSub, Toast.LENGTH_SHORT).show();
-
-            // Yahan se hum Camera/ML screen par ja sakte hain
-            // Intent intent = new Intent(getActivity(), YourMLActivity.class);
-            // startActivity(intent);
+            Intent intent = new Intent(getActivity(), FaceScannerActivity.class);
+            // Tell the camera that the Professor is opening it, so it searches the database!
+            intent.putExtra("MODE", "ATTENDANCE");
+            startActivity(intent);
         });
 
-        // Logout Button
         btnLogout.setOnClickListener(v -> {
             if (getActivity() != null) {
-                getActivity().onBackPressed(); // Wapas login par jane ke liye
+                getActivity().onBackPressed();
             }
         });
 
-        // History aur Export ke liye basic toasts
         btnViewHistory.setOnClickListener(v -> Toast.makeText(getContext(), "Opening History...", Toast.LENGTH_SHORT).show());
         btnExport.setOnClickListener(v -> Toast.makeText(getContext(), "Generating Report...", Toast.LENGTH_SHORT).show());
     }

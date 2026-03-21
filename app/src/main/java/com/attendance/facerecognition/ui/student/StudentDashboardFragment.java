@@ -4,10 +4,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -16,81 +13,81 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.attendance.facerecognition.R;
+import com.attendance.facerecognition.database.FirebaseManager;
+
+import java.util.List;
 
 public class StudentDashboardFragment extends Fragment {
 
-    private Spinner spinnerSubject;
-    private TextView tvTotal, tvPresent, tvPercent, tvName, tvSelectedTitle;
+    // These names must be used exactly below
+    private TextView tvStudentName, tvPercentage, tvTotalClasses, tvPresentClasses;
     private Button btnLogout;
+    private String studentId;
+    private FirebaseManager db;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        // Layout attach kar rahe hain
         View view = inflater.inflate(R.layout.fragment_student_dashboard, container, false);
 
-        // Views initialize karein (IDs wahi hain jo humne XML mein di thi)
-        tvName = view.findViewById(R.id.tvStudentName);
-        spinnerSubject = view.findViewById(R.id.spinnerStudentSubject);
-        tvTotal = view.findViewById(R.id.tvTotalClasses);
-        tvPresent = view.findViewById(R.id.tvPresentClasses);
-        tvPercent = view.findViewById(R.id.tvPercentage);
-        tvSelectedTitle = view.findViewById(R.id.tvSelectedSubjectTitle);
+        // Initialize UI - Matching your XML IDs exactly
+        tvStudentName = view.findViewById(R.id.tvStudentName);
+        tvPercentage = view.findViewById(R.id.tvPercentage);
+        tvTotalClasses = view.findViewById(R.id.tvTotalClasses);
+        tvPresentClasses = view.findViewById(R.id.tvPresentClasses);
         btnLogout = view.findViewById(R.id.btnLogoutStudent);
+        btnLogout.setOnClickListener(v -> {
+            if (getActivity() != null) {
+                // This simulates the 'Back' button, which MainActivity handles
+                // to show the login fields again.
+                getActivity().onBackPressed();
 
-        // Spinner setup (Subjects ki list)
-        setupSubjectSpinner();
+                Toast.makeText(getContext(), "Logged out successfully", Toast.LENGTH_SHORT).show();
+            }
+        });
 
-        // Logout logic
+        db = new FirebaseManager();
+
+        // Retrieve the Student ID passed from Login
+        if (getArguments() != null) {
+            studentId = getArguments().getString("STUDENT_ID");
+        }
+
         btnLogout.setOnClickListener(v -> {
             if (getActivity() != null) {
                 getActivity().onBackPressed();
             }
         });
 
+        if (studentId != null) {
+            fetchStudentData();
+        }
+
         return view;
     }
 
-    private void setupSubjectSpinner() {
-        // List of subjects for student
-        String[] subjects = {"Mathematics", "Physics", "Computer Science", "Digital Electronics"};
-
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(),
-                android.R.layout.simple_spinner_item, subjects);
-
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerSubject.setAdapter(adapter);
-
-        // Spinner Selection Logic
-        spinnerSubject.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+    private void fetchStudentData() {
+        db.getStudentProfile(studentId, new FirebaseManager.OnProfileRetrieved() {
             @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                String selectedSubject = subjects[position];
-                tvSelectedTitle.setText("Statistics for " + selectedSubject);
-
-                // Demo Data: Yahan baad mein Firebase se real data aayega
-                updateAttendanceStats(selectedSubject);
+            public void onRetrieved(String name, String email, List<String> subjects) {
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        tvStudentName.setText("Welcome, " + name);
+                        tvTotalClasses.setText("20");
+                        tvPresentClasses.setText("18");
+                        tvPercentage.setText("90%");
+                    });
+                }
             }
 
             @Override
-            public void onNothingSelected(AdapterView<?> parent) { }
+            public void onError(String error) {
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() ->
+                            Toast.makeText(getContext(), "Error: " + error, Toast.LENGTH_SHORT).show()
+                    );
+                }
+            }
         });
-    }
-
-    // Ye function sirf dikhane ke liye hai ki data kaise change hoga
-    private void updateAttendanceStats(String subject) {
-        if (subject.equals("Mathematics")) {
-            tvTotal.setText("40");
-            tvPresent.setText("32");
-            tvPercent.setText("80%");
-        } else if (subject.equals("Physics")) {
-            tvTotal.setText("35");
-            tvPresent.setText("25");
-            tvPercent.setText("71%");
-        } else {
-            tvTotal.setText("30");
-            tvPresent.setText("28");
-            tvPercent.setText("93%");
-        }
     }
 }

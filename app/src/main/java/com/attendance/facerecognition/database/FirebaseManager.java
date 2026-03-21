@@ -1,11 +1,9 @@
 package com.attendance.facerecognition.database;
 
 import android.util.Log;
-
 import com.attendance.facerecognition.utils.Constants;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -22,15 +20,42 @@ public class FirebaseManager {
         db = FirebaseFirestore.getInstance();
     }
 
+    // ==================== AUTHENTICATION ====================
+
+    /**
+     * Verifies if the student ID and password match the records in Firestore.
+     */
+    public void verifyStudentLogin(String studentId, String password, OnLoginResult listener) {
+        db.collection(Constants.FIREBASE_STUDENTS).document(studentId)
+                .get()
+                .addOnSuccessListener(document -> {
+                    if (document.exists()) {
+                        String savedPassword = document.getString("password");
+                        if (password != null && password.equals(savedPassword)) {
+                            listener.onSuccess();
+                        } else {
+                            listener.onError("Incorrect Password");
+                        }
+                    } else {
+                        listener.onError("Student ID not found");
+                    }
+                })
+                .addOnFailureListener(e -> listener.onError(e.getMessage()));
+    }
+
     // ==================== STUDENT OPERATIONS ====================
 
-    public void registerStudent(String studentId, String name, String email,
+    /**
+     * Registers a new student and SAVES THE PASSWORD to Firestore.
+     */
+    public void registerStudent(String studentId, String name, String email, String password,
                                 List<String> enrolledSubjects,
                                 OnCompleteListener listener) {
         Map<String, Object> student = new HashMap<>();
         student.put("studentId", studentId);
         student.put("name", name);
         student.put("email", email);
+        student.put("password", password); // Fixed: Saving password automatically
         student.put("enrolledSubjects", enrolledSubjects);
         student.put("registeredAt", new Date());
         student.put("facesRegistered", 0);
@@ -39,13 +64,29 @@ public class FirebaseManager {
         db.collection(Constants.FIREBASE_STUDENTS).document(studentId)
                 .set(student)
                 .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "Student registered: " + studentId);
+                    Log.d(TAG, "Student registered with password: " + studentId);
                     listener.onSuccess("Student registered successfully");
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Error registering student", e);
                     listener.onError(e.getMessage());
                 });
+    }
+
+    public void getStudentProfile(String studentId, OnProfileRetrieved listener) {
+        db.collection(Constants.FIREBASE_STUDENTS).document(studentId)
+                .get()
+                .addOnSuccessListener(document -> {
+                    if (document.exists()) {
+                        String name = document.getString("name");
+                        String email = document.getString("email");
+                        List<String> subjects = (List<String>) document.get("enrolledSubjects");
+                        listener.onRetrieved(name, email, subjects);
+                    } else {
+                        listener.onError("Student profile not found");
+                    }
+                })
+                .addOnFailureListener(e -> listener.onError(e.getMessage()));
     }
 
     public void saveFaceEmbedding(String studentId, float[] embedding,
@@ -148,25 +189,6 @@ public class FirebaseManager {
                 });
     }
 
-    public void getAllStudents(OnStudentsRetrieved listener) {
-        db.collection(Constants.FIREBASE_STUDENTS)
-                .get()
-                .addOnSuccessListener(querySnapshot -> {
-                    List<StudentData> students = new ArrayList<>();
-                    for (DocumentSnapshot document : querySnapshot.getDocuments()) {
-                        StudentData student = document.toObject(StudentData.class);
-                        if (student != null) {
-                            students.add(student);
-                        }
-                    }
-                    listener.onRetrieved(students);
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Error retrieving students", e);
-                    listener.onError(e.getMessage());
-                });
-    }
-
     // ==================== HELPER METHODS ====================
 
     private void updateStudentFaceCount(String studentId) {
@@ -199,7 +221,39 @@ public class FirebaseManager {
         return array;
     }
 
+    public void getAllFaceEmbeddings(OnAllEmbeddingsRetrieved listener) {
+        db.collection(Constants.FIREBASE_EMBEDDINGS)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    Map<String, float[]> faceBank = new HashMap<>();
+                    for (DocumentSnapshot document : querySnapshot.getDocuments()) {
+                        String studentId = document.getString("studentId");
+                        String embeddingStr = document.getString("embeddingVector");
+                        if (studentId != null && embeddingStr != null) {
+                            faceBank.put(studentId, stringToFloatArray(embeddingStr));
+                        }
+                    }
+                    listener.onRetrieved(faceBank);
+                })
+                .addOnFailureListener(e -> listener.onError(e.getMessage()));
+    }
+
     // ==================== CALLBACK INTERFACES ====================
+
+    public interface OnLoginResult {
+        void onSuccess();
+        void onError(String error);
+    }
+
+    public interface OnProfileRetrieved {
+        void onRetrieved(String name, String email, List<String> subjects);
+        void onError(String error);
+    }
+
+    public interface OnAllEmbeddingsRetrieved {
+        void onRetrieved(Map<String, float[]> faceBank);
+        void onError(String error);
+    }
 
     public interface OnCompleteListener {
         void onSuccess(String message);
@@ -229,16 +283,6 @@ public class FirebaseManager {
         public int presentDays;
         public int totalClasses;
         public float attendance;
-
-        @Override
-        public String toString() {
-            return "AttendanceRecord{" +
-                    "studentId='" + studentId + '\'' +
-                    ", presentDays=" + presentDays +
-                    ", totalClasses=" + totalClasses +
-                    ", attendance=" + attendance + "%" +
-                    '}';
-        }
     }
 
     public static class StudentData {
@@ -249,14 +293,5 @@ public class FirebaseManager {
         public long facesRegistered;
         public long totalAttendance;
         public Date registeredAt;
-
-        @Override
-        public String toString() {
-            return "StudentData{" +
-                    "name='" + name + '\'' +
-                    ", email='" + email + '\'' +
-                    ", facesRegistered=" + facesRegistered +
-                    '}';
-        }
     }
 }
