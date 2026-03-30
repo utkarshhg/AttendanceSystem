@@ -40,6 +40,11 @@
             android:exported="false"
             android:screenOrientation="portrait" />
 
+        <activity
+            android:name=".ui.ViewHistoryActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
         <meta-data
             android:name="com.google.mlkit.vision.DEPENDENCIES"
             android:value="face" />

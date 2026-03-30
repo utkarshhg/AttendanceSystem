@@ -16,8 +16,11 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.attendance.facerecognition.R;
-// ---> CRUCIAL FIX: Import your actual camera!
+import com.attendance.facerecognition.database.FirebaseManager;
 import com.attendance.facerecognition.ui.FaceScannerActivity;
+import com.attendance.facerecognition.ui.ViewHistoryActivity;
+
+import java.util.List;
 
 public class ProfessorDashboardFragment extends Fragment {
 
@@ -25,14 +28,30 @@ public class ProfessorDashboardFragment extends Fragment {
     private Button btnTakeAttendance, btnLogout, btnViewHistory, btnExport;
     private TextView tvWelcome;
 
+    // Database and ID variables
+    private FirebaseManager db;
+    private String profId;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_professor_dashboard, container, false);
 
+        db = new FirebaseManager();
+
         initViews(view);
         setupSpinners();
         setupListeners();
+
+        // Catch the Professor ID passed from MainActivity
+        if (getArguments() != null) {
+            profId = getArguments().getString("PROF_ID");
+        }
+
+        // Fetch the name if we have the ID
+        if (profId != null) {
+            fetchProfessorData();
+        }
 
         return view;
     }
@@ -45,6 +64,30 @@ public class ProfessorDashboardFragment extends Fragment {
         btnViewHistory = view.findViewById(R.id.btnViewHistory);
         btnExport = view.findViewById(R.id.btnExportReport);
         tvWelcome = view.findViewById(R.id.tvProfWelcome);
+    }
+
+    // The method to fetch and display the name
+    private void fetchProfessorData() {
+        db.getProfessorProfile(profId, new FirebaseManager.OnProfessorProfileRetrieved() {
+            @Override
+            public void onRetrieved(String name) {
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        // Update the text view with the actual name from Firebase
+                        tvWelcome.setText("Welcome, " + name);
+                    });
+                }
+            }
+
+            @Override
+            public void onError(String error) {
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() ->
+                            Toast.makeText(getContext(), "Error loading profile: " + error, Toast.LENGTH_SHORT).show()
+                    );
+                }
+            }
+        });
     }
 
     private void setupSpinners() {
@@ -60,14 +103,18 @@ public class ProfessorDashboardFragment extends Fragment {
     }
 
     private void setupListeners() {
-        // ---> THE FIX: Turn the Camera on in "Attendance Mode"
         btnTakeAttendance.setOnClickListener(v -> {
+            // 1. Grab the selected text from the Spinners
             String selectedSub = spinnerSubject.getSelectedItem().toString();
-            Toast.makeText(getContext(), "Opening Camera for " + selectedSub, Toast.LENGTH_SHORT).show();
+            String selectedBranch = spinnerBranch.getSelectedItem().toString();
 
+            Toast.makeText(getContext(), "Opening Camera for " + selectedSub + " (" + selectedBranch + ")", Toast.LENGTH_SHORT).show();
+
+            // 2. Pass this data to the Face Scanner
             Intent intent = new Intent(getActivity(), FaceScannerActivity.class);
-            // Tell the camera that the Professor is opening it, so it searches the database!
             intent.putExtra("MODE", "ATTENDANCE");
+            intent.putExtra("SUBJECT", selectedSub);
+            intent.putExtra("BRANCH", selectedBranch);
             startActivity(intent);
         });
 
@@ -77,7 +124,83 @@ public class ProfessorDashboardFragment extends Fragment {
             }
         });
 
-        btnViewHistory.setOnClickListener(v -> Toast.makeText(getContext(), "Opening History...", Toast.LENGTH_SHORT).show());
-        btnExport.setOnClickListener(v -> Toast.makeText(getContext(), "Generating Report...", Toast.LENGTH_SHORT).show());
+        btnViewHistory.setOnClickListener(v -> {
+            String selectedSub = spinnerSubject.getSelectedItem().toString();
+            String selectedBranch = spinnerBranch.getSelectedItem().toString();
+
+            Intent intent = new Intent(getActivity(), ViewHistoryActivity.class);
+            intent.putExtra("SUBJECT", selectedSub);
+            intent.putExtra("BRANCH", selectedBranch);
+            startActivity(intent);
+        });
+
+        // NEW: Trigger the CSV Export
+        btnExport.setOnClickListener(v -> {
+            String selectedSub = spinnerSubject.getSelectedItem().toString();
+            String selectedBranch = spinnerBranch.getSelectedItem().toString();
+            exportToCSV(selectedSub, selectedBranch);
+        });
+    }
+
+    // NEW: Generates an Excel-friendly CSV file and saves it to the Downloads folder
+    private void exportToCSV(String subject, String branch) {
+        Toast.makeText(getContext(), "Generating Spreadsheet...", Toast.LENGTH_SHORT).show();
+
+        db.getClassAttendanceHistory(subject, branch, new FirebaseManager.OnClassAttendanceRetrieved() {
+            @Override
+            public void onRetrieved(List<FirebaseManager.ClassAttendanceRecord> records) {
+                if (getActivity() == null) return;
+
+                getActivity().runOnUiThread(() -> {
+                    if (records.isEmpty()) {
+                        Toast.makeText(getContext(), "No data to export!", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    try {
+                        // 1. Build the CSV Text
+                        StringBuilder csvData = new StringBuilder();
+                        csvData.append("Date,Total Present,Student IDs\n"); // Column Headers
+
+                        for (FirebaseManager.ClassAttendanceRecord record : records) {
+                            String students = "None";
+                            if (record.presentStudents != null && !record.presentStudents.isEmpty()) {
+                                // Using semi-colons so it doesn't break the CSV columns
+                                students = String.join(";", record.presentStudents);
+                            }
+                            csvData.append(record.date).append(",")
+                                    .append(record.totalPresent).append(",")
+                                    .append(students).append("\n");
+                        }
+
+                        // 2. Save it to the device's Downloads folder
+                        android.content.ContentValues values = new android.content.ContentValues();
+                        values.put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, subject + "_" + branch + "_Attendance.csv");
+                        values.put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "text/csv");
+                        values.put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS);
+
+                        android.net.Uri uri = requireContext().getContentResolver().insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+
+                        if (uri != null) {
+                            java.io.OutputStream outputStream = requireContext().getContentResolver().openOutputStream(uri);
+                            if (outputStream != null) {
+                                outputStream.write(csvData.toString().getBytes());
+                                outputStream.close();
+                                Toast.makeText(getContext(), "✅ Saved to Downloads folder!", Toast.LENGTH_LONG).show();
+                            }
+                        }
+                    } catch (Exception e) {
+                        Toast.makeText(getContext(), "Export failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                });
+            }
+
+            @Override
+            public void onError(String error) {
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> Toast.makeText(getContext(), "Error: " + error, Toast.LENGTH_SHORT).show());
+                }
+            }
+        });
     }
 }

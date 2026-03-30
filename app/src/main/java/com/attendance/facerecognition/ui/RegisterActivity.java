@@ -45,17 +45,22 @@ public class RegisterActivity extends AppCompatActivity {
         setupListeners();
     }
 
+
     private void checkUserRole() {
         userRole = getIntent().getStringExtra("user_role");
         if (userRole != null && userRole.equals("professor")) {
-            // Professors don't need a Roll Number or Face Scan to create an account
-            etRoll.setVisibility(View.GONE);
+            // UNHIDE the Roll field, but change the hint so it makes sense for Professors
+            etRoll.setVisibility(View.VISIBLE);
+            etRoll.setHint("Professor ID (e.g., PROF1)");
+
+            // Hide the stuff Professors don't need
             etBranch.setVisibility(View.GONE);
             btnCaptureFace.setVisibility(View.GONE);
             tvTitle.setText("Professor Registration");
         } else {
             // Students need everything
             etRoll.setVisibility(View.VISIBLE);
+            etRoll.setHint("Roll Number");
             etBranch.setVisibility(View.VISIBLE);
             btnCaptureFace.setVisibility(View.VISIBLE);
             tvTitle.setText("Student Registration");
@@ -102,13 +107,33 @@ public class RegisterActivity extends AppCompatActivity {
         }
 
         if ("professor".equals(userRole)) {
-            // Professor Registration (Basic)
-            // Note: You can expand this later by adding a registerProfessor method to FirebaseManager
-            Toast.makeText(this, "Professor Registered Successfully!", Toast.LENGTH_SHORT).show();
-            finish();
+            // PROFESSOR REGISTRATION LOGIC
+            String profId = etRoll.getText().toString().trim().toUpperCase();
+
+            if (profId.isEmpty()) {
+                Toast.makeText(this, "Please enter a Professor ID", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Toast.makeText(this, "Registering Professor...", Toast.LENGTH_SHORT).show();
+
+            db.registerProfessor(profId, name, password, new FirebaseManager.OnCompleteListener() {
+                @Override
+                public void onSuccess(String message) {
+                    runOnUiThread(() -> {
+                        Toast.makeText(RegisterActivity.this, "Professor Registered!", Toast.LENGTH_LONG).show();
+                        finish(); // Send back to Login
+                    });
+                }
+
+                @Override
+                public void onError(String error) {
+                    runOnUiThread(() -> Toast.makeText(RegisterActivity.this, "Error: " + error, Toast.LENGTH_LONG).show());
+                }
+            });
 
         } else {
-            // Student Registration (Full Database Push)
+            // STUDENT REGISTRATION LOGIC
             String roll = etRoll.getText().toString().trim();
             String branch = etBranch.getText().toString().trim();
 
@@ -124,15 +149,11 @@ public class RegisterActivity extends AppCompatActivity {
 
             Toast.makeText(this, "Saving to Database...", Toast.LENGTH_SHORT).show();
 
-            // Create a dummy email format
             String email = roll + "@college.edu";
-
-            // Assign default subjects (This can be made dynamic later)
             ArrayList<String> enrolledSubjects = new ArrayList<>(Arrays.asList(
                     "Mathematics", "Physics", "Computer Science", "Software Engineering"
             ));
 
-            // Push to Firebase with the PASSWORD included
             db.registerStudent(roll, name, email, password, enrolledSubjects, new FirebaseManager.OnCompleteListener() {
                 @Override
                 public void onSuccess(String message) {

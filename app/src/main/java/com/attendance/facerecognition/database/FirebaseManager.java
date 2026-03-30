@@ -42,6 +42,48 @@ public class FirebaseManager {
                 })
                 .addOnFailureListener(e -> listener.onError(e.getMessage()));
     }
+    /**
+     * Verifies if the professor ID and password match the records in Firestore.
+     */
+    public void verifyProfessorLogin(String profId, String password, OnLoginResult listener) {
+        // We are using a new collection called "professors"
+        db.collection("professors").document(profId)
+                .get()
+                .addOnSuccessListener(document -> {
+                    if (document.exists()) {
+                        String savedPassword = document.getString("password");
+                        if (password != null && password.equals(savedPassword)) {
+                            listener.onSuccess();
+                        } else {
+                            listener.onError("Incorrect Password");
+                        }
+                    } else {
+                        listener.onError("Professor ID not found");
+                    }
+                })
+                .addOnFailureListener(e -> listener.onError(e.getMessage()));
+    }
+    /**
+     * Registers a new professor and saves their password to Firestore.
+     */
+    public void registerProfessor(String profId, String name, String password, OnCompleteListener listener) {
+        Map<String, Object> professor = new HashMap<>();
+        professor.put("profId", profId);
+        professor.put("name", name);
+        professor.put("password", password);
+        professor.put("registeredAt", new Date());
+
+        db.collection("professors").document(profId)
+                .set(professor)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d("FirebaseManager", "Professor registered: " + profId);
+                    listener.onSuccess("Professor registered successfully");
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("FirebaseManager", "Error registering professor", e);
+                    listener.onError(e.getMessage());
+                });
+    }
 
     // ==================== STUDENT OPERATIONS ====================
 
@@ -293,5 +335,83 @@ public class FirebaseManager {
         public long facesRegistered;
         public long totalAttendance;
         public Date registeredAt;
+    }
+    // ==================== PROFESSOR OPERATIONS ====================
+
+    public void getProfessorProfile(String profId, OnProfessorProfileRetrieved listener) {
+        db.collection("professors").document(profId)
+                .get()
+                .addOnSuccessListener(document -> {
+                    if (document.exists()) {
+                        String name = document.getString("name");
+                        listener.onRetrieved(name);
+                    } else {
+                        listener.onError("Professor profile not found");
+                    }
+                })
+                .addOnFailureListener(e -> listener.onError(e.getMessage()));
+    }
+
+    // Add this interface inside your FirebaseManager class with the other interfaces
+    public interface OnProfessorProfileRetrieved {
+        void onRetrieved(String name);
+        void onError(String error);
+    }
+    // ==================== HISTORY OPERATIONS ====================
+
+    public void getClassAttendanceHistory(String subjectId, String branch, OnClassAttendanceRetrieved listener) {
+        db.collection(Constants.FIREBASE_ATTENDANCE)
+                .whereEqualTo("subjectId", subjectId)
+                .whereEqualTo("className", branch) // In FaceScanner, we saved branch as className
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    List<ClassAttendanceRecord> records = new ArrayList<>();
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        ClassAttendanceRecord record = new ClassAttendanceRecord();
+                        record.date = doc.getString("date");
+                        Long total = doc.getLong("totalPresent");
+                        record.totalPresent = total != null ? total.intValue() : 0;
+                        record.presentStudents = (List<String>) doc.get("presentStudents");
+                        records.add(record);
+                    }
+                    listener.onRetrieved(records);
+                })
+                .addOnFailureListener(e -> listener.onError(e.getMessage()));
+    }
+
+    // Add this to your CALLBACK INTERFACES section
+    public interface OnClassAttendanceRetrieved {
+        void onRetrieved(List<ClassAttendanceRecord> records);
+        void onError(String error);
+    }
+
+    // Add this to your DATA CLASSES section
+    public static class ClassAttendanceRecord {
+        public String date;
+        public int totalPresent;
+        public List<String> presentStudents;
+    }
+    // ==================== MASTER LIST OPERATION ====================
+
+    public void getAllRegisteredStudents(OnAllStudentsRetrieved listener) {
+        db.collection(Constants.FIREBASE_STUDENTS) // Looks at the "students" collection
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    List<String> studentIds = new ArrayList<>();
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        String id = doc.getString("studentId");
+                        if (id != null) {
+                            studentIds.add(id);
+                        }
+                    }
+                    listener.onRetrieved(studentIds);
+                })
+                .addOnFailureListener(e -> listener.onError(e.getMessage()));
+    }
+
+    // Add this interface inside your FirebaseManager with your other interfaces!
+    public interface OnAllStudentsRetrieved {
+        void onRetrieved(List<String> studentIds);
+        void onError(String error);
     }
 }

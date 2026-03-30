@@ -7,6 +7,11 @@ android {
     namespace 'com.attendance.facerecognition'
     compileSdk 34
 
+    // 🚨 THE CRITICAL FIX: Tells Android NOT to compress your AI model!
+    aaptOptions {
+        noCompress "tflite"
+    }
+
     defaultConfig {
         applicationId "com.attendance.facerecognition"
         minSdk 21
@@ -46,7 +51,6 @@ android {
 }
 
 dependencies {
-
 
     // Google ML Kit for Face Detection
     implementation 'com.google.mlkit:face-detection:16.1.6'

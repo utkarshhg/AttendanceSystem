@@ -27,7 +27,6 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.attendance.facerecognition.R;
-// Make sure this import matches your project!
 import com.attendance.facerecognition.database.FirebaseManager;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -47,6 +46,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -55,7 +55,6 @@ import java.util.concurrent.Executors;
 public class FaceScannerActivity extends AppCompatActivity {
     private static final String TAG = "FaceScanner";
 
-    // Permission Variables
     private static final int REQUEST_CODE_PERMISSIONS = 10;
     private static final String[] REQUIRED_PERMISSIONS = new String[]{Manifest.permission.CAMERA};
 
@@ -66,15 +65,16 @@ public class FaceScannerActivity extends AppCompatActivity {
 
     private Interpreter tflite;
     private ImageView facePreview;
+    private FaceBoxOverlay faceOverlay;
 
-    // Database and routing variables
     private FirebaseManager db;
     private String currentStudentId;
     private String mode;
+    private String subjectName;
+    private String branchName;
 
-    // Memory to hold all registered students for quick scanning
     private Map<String, float[]> faceDatabase = new HashMap<>();
-    private ArrayList<String> alreadyMarkedStudents = new ArrayList<>(); // Prevents spamming Firebase
+    private ArrayList<String> alreadyMarkedStudents = new ArrayList<>();
     private boolean isDatabaseLoaded = false;
 
     @Override
@@ -85,21 +85,23 @@ public class FaceScannerActivity extends AppCompatActivity {
         viewFinder = findViewById(R.id.viewFinder);
         Button captureButton = findViewById(R.id.capture_button);
         facePreview = findViewById(R.id.face_preview);
+        faceOverlay = findViewById(R.id.faceOverlay);
 
         db = new FirebaseManager();
         currentStudentId = getIntent().getStringExtra("STUDENT_ID");
         mode = getIntent().getStringExtra("MODE");
+        subjectName = getIntent().getStringExtra("SUBJECT");
+        branchName = getIntent().getStringExtra("BRANCH");
 
         cameraExecutor = Executors.newSingleThreadExecutor();
 
         try {
             tflite = new Interpreter(loadModelFile("mobile_face_net.tflite"));
             Log.d(TAG, "TFLite model loaded successfully!");
-        } catch (IOException e) {
-            Toast.makeText(this, "Failed to load AI model.", Toast.LENGTH_LONG).show();
+        } catch (Exception e) {
+            Toast.makeText(this, "Failed to load AI model. Check assets folder.", Toast.LENGTH_LONG).show();
         }
 
-        // If Professor is taking attendance, download the Face Bank!
         if ("ATTENDANCE".equals(mode)) {
             loadFaceDatabase();
             captureButton.setText("Scan Classroom");
@@ -114,7 +116,6 @@ public class FaceScannerActivity extends AppCompatActivity {
         captureButton.setOnClickListener(v -> takePhoto());
     }
 
-    // Download the Face Bank from Firebase
     private void loadFaceDatabase() {
         Toast.makeText(this, "Downloading Face Bank...", Toast.LENGTH_SHORT).show();
 
@@ -123,17 +124,12 @@ public class FaceScannerActivity extends AppCompatActivity {
             public void onRetrieved(Map<String, float[]> data) {
                 faceDatabase = data;
                 isDatabaseLoaded = true;
-
-                runOnUiThread(() -> {
-                    Toast.makeText(FaceScannerActivity.this,
-                            "Face Bank Loaded! (" + faceDatabase.size() + " students)",
-                            Toast.LENGTH_LONG).show();
-                });
+                runOnUiThread(() -> Toast.makeText(FaceScannerActivity.this, "Face Bank Loaded!", Toast.LENGTH_SHORT).show());
             }
 
             @Override
             public void onError(String error) {
-                runOnUiThread(() -> Toast.makeText(FaceScannerActivity.this, "Failed to load database: " + error, Toast.LENGTH_LONG).show());
+                runOnUiThread(() -> Toast.makeText(FaceScannerActivity.this, "Database Error: " + error, Toast.LENGTH_LONG).show());
             }
         });
     }
@@ -145,13 +141,11 @@ public class FaceScannerActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_CODE_PERMISSIONS) {
-            if (allPermissionsGranted()) {
-                startCamera();
-            } else {
-                Toast.makeText(this, "Camera permission is required.", Toast.LENGTH_LONG).show();
-                finish();
-            }
+        if (requestCode == REQUEST_CODE_PERMISSIONS && allPermissionsGranted()) {
+            startCamera();
+        } else {
+            Toast.makeText(this, "Camera permission is required.", Toast.LENGTH_LONG).show();
+            finish();
         }
     }
 
@@ -164,35 +158,36 @@ public class FaceScannerActivity extends AppCompatActivity {
                 preview.setSurfaceProvider(viewFinder.getSurfaceProvider());
 
                 imageCapture = new ImageCapture.Builder()
-                        .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                        .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
                         .build();
 
-                CameraSelector cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA;
+                CameraSelector cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
+
                 cameraProvider.unbindAll();
                 cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture);
             } catch (ExecutionException | InterruptedException e) {
-                Log.e(TAG, "Use case binding failed", e);
+                Log.e(TAG, "Camera setup failed", e);
             }
         }, ContextCompat.getMainExecutor(this));
     }
 
     private void takePhoto() {
         if (imageCapture == null) return;
-
         if ("ATTENDANCE".equals(mode) && !isDatabaseLoaded) {
-            Toast.makeText(this, "Still downloading database, please wait...", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Still downloading database...", Toast.LENGTH_SHORT).show();
             return;
         }
+
+        Toast.makeText(this, "📸 Scanning...", Toast.LENGTH_SHORT).show();
 
         imageCapture.takePicture(ContextCompat.getMainExecutor(this), new ImageCapture.OnImageCapturedCallback() {
             @Override
             public void onCaptureSuccess(@NonNull ImageProxy image) {
                 processImage(image);
             }
-
             @Override
             public void onError(@NonNull ImageCaptureException exception) {
-                Log.e(TAG, "Photo capture failed: " + exception.getMessage(), exception);
+                Log.e(TAG, "Photo capture failed", exception);
             }
         });
     }
@@ -202,21 +197,21 @@ public class FaceScannerActivity extends AppCompatActivity {
         Image mediaImage = imageProxy.getImage();
         if (mediaImage != null) {
             InputImage image = InputImage.fromMediaImage(mediaImage, imageProxy.getImageInfo().getRotationDegrees());
+
             FaceDetectorOptions options = new FaceDetectorOptions.Builder()
                     .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
+                    .setMinFaceSize(0.05f)
                     .build();
 
             FaceDetector detector = FaceDetection.getClient(options);
 
             detector.process(image)
                     .addOnSuccessListener(faces -> {
-                        if (faces.isEmpty()) {
-                            // No faces, do nothing (removes annoying spam)
-                        } else {
-                            // Variables to track the crowd in this specific frame
+                        if (!faces.isEmpty()) {
                             ArrayList<String> recognizedInThisFrame = new ArrayList<>();
                             ArrayList<String> newlyMarkedThisFrame = new ArrayList<>();
                             int unrecognizedCount = 0;
+                            List<FaceBoxOverlay.FaceData> boxesToDraw = new ArrayList<>();
 
                             for (int i = 0; i < faces.size(); i++) {
                                 Face currentFace = faces.get(i);
@@ -228,42 +223,46 @@ public class FaceScannerActivity extends AppCompatActivity {
                                     matrix.postRotate(imageProxy.getImageInfo().getRotationDegrees());
                                     Bitmap rotatedBitmap = Bitmap.createBitmap(fullBitmap, 0, 0, fullBitmap.getWidth(), fullBitmap.getHeight(), matrix, true);
 
-                                    int x = Math.max(bounds.left, 0);
-                                    int y = Math.max(bounds.top, 0);
-                                    int width = Math.min(bounds.width(), rotatedBitmap.getWidth() - x);
-                                    int height = Math.min(bounds.height(), rotatedBitmap.getHeight() - y);
+                                    int padding = 25;
+                                    int x = Math.max(bounds.left - padding, 0);
+                                    int y = Math.max(bounds.top - padding, 0);
+                                    int width = Math.min(bounds.width() + (padding * 2), rotatedBitmap.getWidth() - x);
+                                    int height = Math.min(bounds.height() + (padding * 2), rotatedBitmap.getHeight() - y);
 
                                     Bitmap croppedFace = Bitmap.createBitmap(rotatedBitmap, x, y, width, height);
+
+                                    // 🚨 SAFE BASELINE: 112x112
                                     Bitmap scaledFace = Bitmap.createScaledBitmap(croppedFace, 112, 112, false);
 
-                                    runOnUiThread(() -> facePreview.setImageBitmap(scaledFace));
-
                                     ByteBuffer inputBuffer = convertBitmapToByteBuffer(scaledFace);
+
+                                    // 🚨 SAFE BASELINE: 192 output
                                     float[][] faceEmbedding = new float[1][192];
-                                    tflite.run(inputBuffer, faceEmbedding);
+
+                                    if (tflite != null) {
+                                        tflite.run(inputBuffer, faceEmbedding);
+                                    }
 
                                     float[] currentEmbedding = faceEmbedding[0];
 
                                     if ("ATTENDANCE".equals(mode)) {
                                         String matchedStudentId = "Unknown";
-
-                                        // ---> THE STRICTNESS DIAL <---
-                                        // Properly set to 0.90f
-                                        float minDistance = 0.90f;
+                                        float minDistance = 0.80f;
 
                                         for (Map.Entry<String, float[]> entry : faceDatabase.entrySet()) {
-                                            float distance = calculateDistance(currentEmbedding, entry.getValue());
-                                            if (distance < minDistance) {
-                                                minDistance = distance;
-                                                matchedStudentId = entry.getKey();
+                                            if (entry.getValue().length == currentEmbedding.length) {
+                                                float distance = calculateDistance(currentEmbedding, entry.getValue());
+                                                if (distance < minDistance) {
+                                                    minDistance = distance;
+                                                    matchedStudentId = entry.getKey();
+                                                }
                                             }
                                         }
 
-                                        if (!matchedStudentId.equals("Unknown")) {
-                                            // 1. ALWAYS add to the visual list so the camera knows you belong here
-                                            recognizedInThisFrame.add(matchedStudentId);
+                                        boxesToDraw.add(new FaceBoxOverlay.FaceData(bounds, matchedStudentId));
 
-                                            // 2. ONLY push to Firebase if you haven't been marked yet today
+                                        if (!matchedStudentId.equals("Unknown")) {
+                                            recognizedInThisFrame.add(matchedStudentId);
                                             if (!alreadyMarkedStudents.contains(matchedStudentId)) {
                                                 alreadyMarkedStudents.add(matchedStudentId);
                                                 newlyMarkedThisFrame.add(matchedStudentId);
@@ -273,13 +272,12 @@ public class FaceScannerActivity extends AppCompatActivity {
                                         }
 
                                     } else {
-                                        // REGISTRATION LOGIC
                                         if (currentStudentId != null && !currentStudentId.isEmpty()) {
                                             db.saveFaceEmbedding(currentStudentId, currentEmbedding, 1, new FirebaseManager.OnCompleteListener() {
                                                 @Override
                                                 public void onSuccess(String message) {
                                                     runOnUiThread(() -> {
-                                                        Toast.makeText(FaceScannerActivity.this, "Face securely locked in database!", Toast.LENGTH_LONG).show();
+                                                        Toast.makeText(FaceScannerActivity.this, "Face secured!", Toast.LENGTH_LONG).show();
                                                         finish();
                                                     });
                                                 }
@@ -291,30 +289,33 @@ public class FaceScannerActivity extends AppCompatActivity {
                                         }
                                     }
                                 } catch (Exception e) {
-                                    Log.e(TAG, "Error processing Face", e);
+                                    Log.e(TAG, "Face processing error", e);
                                 }
                             }
 
-                            // ---> MULTIPLE FACE FEEDBACK LOGIC <---
+                            final int finalUnrecognized = unrecognizedCount;
+
                             if ("ATTENDANCE".equals(mode)) {
-                                if (!newlyMarkedThisFrame.isEmpty()) {
-                                    // Yell out the NEW people it just found
-                                    String names = String.join(", ", newlyMarkedThisFrame);
-                                    runOnUiThread(() -> Toast.makeText(FaceScannerActivity.this, "✅ Marked Present: " + names, Toast.LENGTH_LONG).show());
+                                runOnUiThread(() -> {
+                                    faceOverlay.drawFaceBoxes(boxesToDraw, imageProxy.getWidth(), imageProxy.getHeight());
+                                    new android.os.Handler().postDelayed(() -> faceOverlay.clear(), 3000);
 
-                                    // Push the updated class list to Firebase
-                                    db.markAttendance("Class_Demo", alreadyMarkedStudents, "AI Attendance", new FirebaseManager.OnCompleteListener() {
-                                        @Override
-                                        public void onSuccess(String message) { Log.d(TAG, "Attendance saved to cloud!"); }
-                                        @Override
-                                        public void onError(String error) { Log.e(TAG, "Failed to save: " + error); }
-                                    });
+                                    if (!newlyMarkedThisFrame.isEmpty()) {
+                                        Toast.makeText(FaceScannerActivity.this, "✅ Marked: " + String.join(", ", newlyMarkedThisFrame), Toast.LENGTH_LONG).show();
+                                        String finalSubject = (subjectName != null) ? subjectName : "Unknown";
+                                        String finalBranch = (branchName != null) ? branchName : "Unknown";
 
-                                } else if (unrecognizedCount > 0 && recognizedInThisFrame.isEmpty()) {
-                                    // ONLY complain about imposters if NO registered students are in the frame
-                                    final int finalUnrecognized = unrecognizedCount;
-                                    runOnUiThread(() -> Toast.makeText(FaceScannerActivity.this, "❌ " + finalUnrecognized + " Unrecognized Face(s)", Toast.LENGTH_SHORT).show());
-                                }
+                                        db.markAttendance(finalSubject, alreadyMarkedStudents, finalBranch, new FirebaseManager.OnCompleteListener() {
+                                            @Override
+                                            public void onSuccess(String message) { Log.d(TAG, "Saved!"); }
+                                            @Override
+                                            public void onError(String error) { Log.e(TAG, "Save failed"+error); }
+                                        });
+
+                                    } else if (finalUnrecognized > 0 && recognizedInThisFrame.isEmpty()) {
+                                        Toast.makeText(FaceScannerActivity.this, "❌ Unrecognized Face", Toast.LENGTH_SHORT).show();
+                                    }
+                                });
                             }
                         }
                     })
@@ -324,6 +325,7 @@ public class FaceScannerActivity extends AppCompatActivity {
         }
     }
 
+    // 🚨 SAFE BASELINE: 112x112 Buffer
     private ByteBuffer convertBitmapToByteBuffer(Bitmap bitmap) {
         ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4 * 112 * 112 * 3);
         byteBuffer.order(ByteOrder.nativeOrder());
